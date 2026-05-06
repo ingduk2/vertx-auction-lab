@@ -1,3 +1,6 @@
 spring:
   application:
     name: vertx-auction-lab
+
+server:
+  port: 8080
