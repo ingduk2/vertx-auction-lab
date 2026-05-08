@@ -1,5 +1,7 @@
 package com.auction.lab.verticle;
 
+import com.auction.lab.common.EventBusAddress;
+import com.auction.lab.domain.message.BidMessage;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
@@ -13,16 +15,26 @@ public class AuctionVerticle extends AbstractVerticle {
     public void start(Promise<Void> startPromise) throws Exception {
         log.info("AuctionVerticle Start Thread: {}", Thread.currentThread().getName());
 
-        vertx.eventBus().<Integer>consumer("auction.bid.request", message -> {
-            int bidAmount = message.body();
-            log.info("bidAmount: {}", bidAmount);
+        vertx.eventBus().<BidMessage>consumer(EventBusAddress.BID_REQUEST.address(), message -> {
+            BidMessage bidMessage = message.body();
+            log.info("Received bidMessage: {}", bidMessage);
 
-            if (bidAmount > highestBid) {
-                highestBid = bidAmount;
+            if (bidMessage == null) {
+                message.fail(400, "BidMessage is null");
+                return;
+            }
+
+            if (bidMessage.amount() <= 0) {
+                message.fail(400, "Bid amount must be greater than 0");
+                return;
+            }
+
+            if (bidMessage.amount() > highestBid) {
+                highestBid = bidMessage.amount();
                 log.info("highestBid: {}", highestBid);
                 message.reply("bid success! highestBid: " + highestBid);
             } else {
-                message.reply("bid fail! highestBid: {}" + highestBid);
+                message.reply("bid fail! highestBid: " + highestBid);
             }
         });
 
