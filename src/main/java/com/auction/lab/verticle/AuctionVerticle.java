@@ -12,7 +12,7 @@ public class AuctionVerticle extends AbstractVerticle {
     private int highestBid = 0;
 
     @Override
-    public void start(Promise<Void> startPromise) throws Exception {
+    public void start(Promise<Void> startPromise) {
         log.info("AuctionVerticle Start Thread: {}", Thread.currentThread().getName());
 
         vertx.eventBus().<BidMessage>consumer(EventBusAddress.BID_REQUEST.address(), message -> {
@@ -32,7 +32,15 @@ public class AuctionVerticle extends AbstractVerticle {
             if (bidMessage.amount() > highestBid) {
                 highestBid = bidMessage.amount();
                 log.info("highestBid: {}", highestBid);
+
+                // 입찰자한테 성공 응답
                 message.reply("bid success! highestBid: " + highestBid);
+
+                // 모든 참여자한테 브로드캐스트
+                vertx.eventBus().publish(
+                        EventBusAddress.BID_RESULT.address(),
+                        "New highest bid: " + highestBid + " by " + bidMessage.bidderId()
+                );
             } else {
                 message.reply("bid fail! highestBid: " + highestBid);
             }
