@@ -1,15 +1,20 @@
 package com.auction.lab.verticle;
 
 import com.auction.lab.common.EventBusAddress;
+import com.auction.lab.domain.AuctionState;
 import com.auction.lab.domain.message.BidMessage;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Slf4j
 public class AuctionVerticle extends AbstractVerticle {
 
-    private int highestBid = 0;
+    // auctionId → AuctionState, 단일 Event Loop Thread에서만 접근하므로 HashMap 사용
+    private final Map<String, AuctionState> auctions = new HashMap<>();
 
     @Override
     public void start(Promise<Void> startPromise) {
@@ -19,30 +24,29 @@ public class AuctionVerticle extends AbstractVerticle {
             BidMessage bidMessage = message.body();
             log.info("Received bidMessage: {}", bidMessage);
 
-            if (bidMessage == null) {
-                message.fail(400, "BidMessage is null");
+            AuctionState state = auctions.computeIfAbsent(
+                    bidMessage.auctionId(),
+                    AuctionState::new
+            );
+
+            if (state.isClosed()) {
+                message.fail(400, "Auction is closed");
                 return;
             }
 
-            if (bidMessage.amount() <= 0) {
-                message.fail(400, "Bid amount must be greater than 0");
-                return;
-            }
+            boolean success = state.bid(bidMessage.bidderId(), bidMessage.amount());
 
-            if (bidMessage.amount() > highestBid) {
-                highestBid = bidMessage.amount();
-                log.info("highestBid: {}", highestBid);
+            if (success) {
+                log.info("Bid accepted - {}", state);
 
-                // 입찰자한테 성공 응답
-                message.reply("bid success! highestBid: " + highestBid);
+                message.reply("bid success ! highestBid: " + state.getHighestBid());
 
-                // 모든 참여자한테 브로드캐스트
                 vertx.eventBus().publish(
                         EventBusAddress.BID_RESULT.address(),
-                        "New highest bid: " + highestBid + " by " + bidMessage.bidderId()
+                        "New highest bid: " + state.getHighestBid() + " by " + state.getHighestBidderId()
                 );
             } else {
-                message.reply("bid fail! highestBid: " + highestBid);
+                message.reply("bid fail! highestBid: " + state.getHighestBid());
             }
         });
 

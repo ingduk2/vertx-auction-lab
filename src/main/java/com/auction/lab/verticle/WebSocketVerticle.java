@@ -48,11 +48,15 @@ public class WebSocketVerticle extends AbstractVerticle {
 
             try {
                 BidMessage bidMessage = objectMapper.readValue(rawMessage, BidMessage.class);
+                bidMessage.validate();
 
                 vertx.eventBus().<String>request(EventBusAddress.BID_REQUEST.address(), bidMessage)
                         .onSuccess(reply -> ws.writeTextMessage(reply.body()))
                         .onFailure(error -> ws.writeTextMessage("Error: " + error.getMessage()));
 
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid bid: {} ", e.getMessage());
+                ws.writeTextMessage("Error: " + e.getMessage());
             } catch (Exception e) {
                 log.error("Invalid message format: {}", rawMessage, e);
                 ws.writeTextMessage("Error: invalid message format");
