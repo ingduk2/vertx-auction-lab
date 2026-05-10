@@ -37,9 +37,15 @@ public class WebSocketVerticle extends AbstractVerticle {
     private void handleWebSocket(ServerWebSocket ws) {
         log.info("Client connected: {}", ws.remoteAddress());
 
-        // BroadCast 구독
+        // BID_RESULT BroadCast 구독
         vertx.eventBus().<String>consumer(
                 EventBusAddress.BID_RESULT.address(),
+                broadcast -> ws.writeTextMessage(broadcast.body())
+        );
+
+        // AUCTION_END BroadCast 구독
+        vertx.eventBus().<String>consumer(
+                EventBusAddress.AUCTION_END.address(),
                 broadcast -> ws.writeTextMessage(broadcast.body())
         );
 

@@ -101,7 +101,7 @@
             z-index: 1;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            grid-template-rows: auto 1fr;
+            grid-template-rows: auto auto 1fr;
             gap: 1px;
             background: var(--border);
             height: calc(100vh - 73px);
@@ -362,6 +362,31 @@
         <button class="btn-disconnect" id="btnDisconnect" onclick="disconnect()" style="display:none;">Disconnect</button>
     </div>
 
+    <!-- Auction Start form -->
+    <div class="panel">
+        <div class="panel-header">
+            auction start
+            <span class="tag">POST /api/auction/start</span>
+        </div>
+        <div class="form-body">
+            <div class="field">
+                <label>Auction ID</label>
+                <input type="text" id="startAuctionId" value="auction-001" />
+            </div>
+            <div class="field">
+                <label>Duration (seconds)</label>
+                <input type="number" id="durationSeconds" value="30" min="1" />
+            </div>
+            <div class="bid-display">
+                <span class="bid-label">Status</span>
+                <span class="bid-value" id="startStatus" style="font-size:16px;">—</span>
+            </div>
+            <button class="btn-send" id="btnStart" onclick="startAuction()" style="background: #7c6af7;">
+                ▶ START AUCTION
+            </button>
+        </div>
+    </div>
+
     <!-- Bid form -->
     <div class="panel">
         <div class="panel-header">
@@ -410,6 +435,28 @@
 <script>
     let ws = null;
     let logCount = 0;
+
+    async function startAuction() {
+        const auctionId = document.getElementById('startAuctionId').value.trim();
+        const durationSeconds = parseInt(document.getElementById('durationSeconds').value);
+        const statusEl = document.getElementById('startStatus');
+
+        try {
+            const res = await fetch('http://localhost:8080/api/auction/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ auctionId, durationSeconds })
+            });
+            const text = await res.text();
+            statusEl.textContent = res.ok ? '✓ started' : '✗ failed';
+            statusEl.style.color = res.ok ? 'var(--accent)' : 'var(--warn)';
+            addLog('system', 'SYS', `Auction start: ${text}`);
+        } catch (e) {
+            statusEl.textContent = '✗ error';
+            statusEl.style.color = 'var(--warn)';
+            addLog('system', 'ERR', `Auction start failed: ${e.message}`);
+        }
+    }
 
     function connect() {
         const url = document.getElementById('wsUrl').value.trim();

@@ -1,6 +1,8 @@
 package com.auction.lab.config;
 
+import com.auction.lab.common.AuctionStartMessageCodec;
 import com.auction.lab.common.BidMessageCodec;
+import com.auction.lab.domain.message.AuctionStartMessage;
 import com.auction.lab.domain.message.BidMessage;
 import com.auction.lab.verticle.AuctionVerticle;
 import com.auction.lab.verticle.WebSocketVerticle;
@@ -38,6 +40,7 @@ public class VertxConfig {
     ) {
         return args -> {
             vertx.eventBus().registerDefaultCodec(BidMessage.class, new BidMessageCodec());
+            vertx.eventBus().registerDefaultCodec(AuctionStartMessage.class, new AuctionStartMessageCodec());
 
             vertx.deployVerticle(auctionVerticle)
                     .onSuccess(id -> log.info("AuctionVerticle deployed. ID: {}", id))
