@@ -96,6 +96,9 @@ Spring REST (:8080)        ← 관리 API (경매 생성, 조회 등)
 - 4-2. 입찰 처리 로직 — 최고가 갱신 & 동시 입찰 처리
 - 4-3. 경매 타이머 — Vert.x `periodic timer`로 마감 처리
 - 4-4. Spring Service 호출 패턴 — Worker Verticle로 블로킹 격리
+- 4-5. Verticle 핸들러 분리 리팩토링 — AuctionVerticle, WebSocketVerticle
+- 4-6. CompletableFuture로 EventBus 응답 대기 — WebMVC 유지
+- 4-7. WebFlux로 교체 — Mono로 EventBus 응답 대기
 
 ---
 
