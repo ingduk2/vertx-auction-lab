@@ -6,6 +6,7 @@ import com.auction.lab.domain.message.AuctionStartMessage;
 import com.auction.lab.domain.message.BidMessage;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
+import io.vertx.core.eventbus.Message;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
@@ -24,62 +25,33 @@ public class AuctionVerticle extends AbstractVerticle {
         log.info("AuctionVerticle Start Thread: {}", Thread.currentThread().getName());
 
         // 경매 시작
-        vertx.eventBus().<AuctionStartMessage>consumer(EventBusAddress.AUCTION_START.address(), message -> {
-            AuctionStartMessage startMessage = message.body();
-            String auctionId = startMessage.auctionId();
-
-            if (auctions.containsKey(auctionId)) {
-                message.fail(400, "Auction already exists: " + auctionId);
-                return;
-            }
-
-            auctions.put(auctionId, new AuctionState(auctionId));
-            log.info("Auction started: {}", auctionId);
-
-            // 타이머 등록 - durationSeconds 후 경매 종료
-            long timerId = vertx.setTimer(
-                    startMessage.durationSeconds() * 1000,
-                    id -> closeAuction(auctionId)
-            );
-
-            timers.put(auctionId, timerId);
-            message.reply("Auction started: " + auctionId);
-        });
-
+        vertx.eventBus().consumer(EventBusAddress.AUCTION_START.address(), this::handleAuctionStart);
         // 입찰 처리
-        vertx.eventBus().<BidMessage>consumer(EventBusAddress.BID_REQUEST.address(), message -> {
-            BidMessage bidMessage = message.body();
-            log.info("Received bidMessage: {}", bidMessage);
-
-            AuctionState state = auctions.get(bidMessage.auctionId());
-
-            if (state == null) {
-                message.fail(404, "Auction not found " + bidMessage.auctionId());
-                return;
-            }
-
-            if (state.isClosed()) {
-                message.fail(400, "Auction is closed: " + bidMessage.auctionId());
-                return;
-            }
-
-            boolean success = state.bid(bidMessage.bidderId(), bidMessage.amount());
-
-            if (success) {
-                log.info("Bid accepted - {}", state);
-
-                message.reply("bid success ! highestBid: " + state.getHighestBid());
-
-                vertx.eventBus().publish(
-                        EventBusAddress.BID_RESULT.address(),
-                        "New highest bid: " + state.getHighestBid() + " by " + state.getHighestBidderId()
-                );
-            } else {
-                message.reply("bid fail! highestBid: " + state.getHighestBid());
-            }
-        });
+        vertx.eventBus().consumer(EventBusAddress.BID_REQUEST.address(), this::handleBid);
 
         startPromise.complete();
+    }
+
+    private void handleAuctionStart(Message<AuctionStartMessage> message) {
+        AuctionStartMessage startMessage = message.body();
+        String auctionId = startMessage.auctionId();
+
+        if (auctions.containsKey(auctionId)) {
+            message.fail(400, "Auction already exists: " + auctionId);
+            return;
+        }
+
+        auctions.put(auctionId, new AuctionState(auctionId));
+        log.info("Auction started: {}", auctionId);
+
+        // 타이머 등록 - durationSeconds 후 경매 종료
+        long timerId = vertx.setTimer(
+                startMessage.durationSeconds() * 1000,
+                id -> closeAuction(auctionId)
+        );
+
+        timers.put(auctionId, timerId);
+        message.reply("Auction started: " + auctionId);
     }
 
     private void closeAuction(String auctionId) {
@@ -97,6 +69,38 @@ public class AuctionVerticle extends AbstractVerticle {
                 EventBusAddress.AUCTION_END.address(),
                 "Auction closed! Winner: " + state.getHighestBidderId() + " with " + state.getHighestBid()
         );
+    }
+
+    private void handleBid(Message<BidMessage> message) {
+        BidMessage bidMessage = message.body();
+        log.info("Received bidMessage: {}", bidMessage);
+
+        AuctionState state = auctions.get(bidMessage.auctionId());
+
+        if (state == null) {
+            message.fail(404, "Auction not found " + bidMessage.auctionId());
+            return;
+        }
+
+        if (state.isClosed()) {
+            message.fail(400, "Auction is closed: " + bidMessage.auctionId());
+            return;
+        }
+
+        boolean success = state.bid(bidMessage.bidderId(), bidMessage.amount());
+
+        if (success) {
+            log.info("Bid accepted - {}", state);
+
+            message.reply("bid success ! highestBid: " + state.getHighestBid());
+
+            vertx.eventBus().publish(
+                    EventBusAddress.BID_RESULT.address(),
+                    "New highest bid: " + state.getHighestBid() + " by " + state.getHighestBidderId()
+            );
+        } else {
+            message.reply("bid fail! highestBid: " + state.getHighestBid());
+        }
     }
 
     @Override

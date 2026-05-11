@@ -38,39 +38,40 @@ public class WebSocketVerticle extends AbstractVerticle {
         log.info("Client connected: {}", ws.remoteAddress());
 
         // BID_RESULT BroadCast 구독
-        vertx.eventBus().<String>consumer(
-                EventBusAddress.BID_RESULT.address(),
-                broadcast -> ws.writeTextMessage(broadcast.body())
-        );
-
+        subscribeBroadcast(ws, EventBusAddress.BID_RESULT);
         // AUCTION_END BroadCast 구독
-        vertx.eventBus().<String>consumer(
-                EventBusAddress.AUCTION_END.address(),
-                broadcast -> ws.writeTextMessage(broadcast.body())
-        );
+        subscribeBroadcast(ws, EventBusAddress.AUCTION_END);
 
-        ws.textMessageHandler(rawMessage -> {
-            log.info("Message received: {}", rawMessage);
-
-            try {
-                BidMessage bidMessage = objectMapper.readValue(rawMessage, BidMessage.class);
-                bidMessage.validate();
-
-                vertx.eventBus().<String>request(EventBusAddress.BID_REQUEST.address(), bidMessage)
-                        .onSuccess(reply -> ws.writeTextMessage(reply.body()))
-                        .onFailure(error -> ws.writeTextMessage("Error: " + error.getMessage()));
-
-            } catch (IllegalArgumentException e) {
-                log.warn("Invalid bid: {} ", e.getMessage());
-                ws.writeTextMessage("Error: " + e.getMessage());
-            } catch (Exception e) {
-                log.error("Invalid message format: {}", rawMessage, e);
-                ws.writeTextMessage("Error: invalid message format");
-            }
-        });
-
+        ws.textMessageHandler(rawMessage -> handleMessage(ws, rawMessage));
         ws.closeHandler(event -> log.info("Client disconnected: {}", ws.remoteAddress()));
         ws.exceptionHandler(error -> log.error("WebSocket error: {}", ws.remoteAddress(), error));
+    }
+
+    private void subscribeBroadcast(ServerWebSocket ws, EventBusAddress bidResult) {
+        vertx.eventBus().<String>consumer(
+                bidResult.address(),
+                broadcast -> ws.writeTextMessage(broadcast.body())
+        );
+    }
+
+    private void handleMessage(ServerWebSocket ws, String rawMessage) {
+        log.info("Message received: {}", rawMessage);
+
+        try {
+            BidMessage bidMessage = objectMapper.readValue(rawMessage, BidMessage.class);
+            bidMessage.validate();
+
+            vertx.eventBus().<String>request(EventBusAddress.BID_REQUEST.address(), bidMessage)
+                    .onSuccess(reply -> ws.writeTextMessage(reply.body()))
+                    .onFailure(error -> ws.writeTextMessage("Error: " + error.getMessage()));
+
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid bid: {} ", e.getMessage());
+            ws.writeTextMessage("Error: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Invalid message format: {}", rawMessage, e);
+            ws.writeTextMessage("Error: invalid message format");
+        }
     }
 
     @Override
