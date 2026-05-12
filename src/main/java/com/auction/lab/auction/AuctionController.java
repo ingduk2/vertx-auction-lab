@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.concurrent.CompletableFuture;
+
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -18,12 +20,15 @@ public class AuctionController {
     private final AuctionService auctionService;
 
     @PostMapping("/start")
-    public ResponseEntity<String> startAuction(
+    public CompletableFuture<ResponseEntity<String>> startAuction(
             @RequestBody AuctionStartRequest request
     ) {
         AuctionStartMessage message = request.toMessage();
-        auctionService.startAuction(message);
-
-        return ResponseEntity.ok("Auction start requested: " + request.auctionId());
+        return auctionService.startAuction(request.toMessage())
+                .thenApply(ResponseEntity::ok)
+                .exceptionally(error -> ResponseEntity
+                        .badRequest()
+                        .body(error.getCause().getMessage())
+                );
     }
 }

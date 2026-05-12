@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.CompletableFuture;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -15,7 +17,8 @@ public class AuctionService {
 
     private final Vertx vertx;
 
-    public void startAuction(AuctionStartMessage message) {
+    public CompletableFuture<String> startAuction(AuctionStartMessage message) {
+        CompletableFuture<String> future = new CompletableFuture<>();
         DeliveryOptions options = new DeliveryOptions().setSendTimeout(3000);
 
         vertx.eventBus().<String>request(
@@ -23,7 +26,9 @@ public class AuctionService {
                         message,
                         options
                 )
-                .onSuccess(reply -> log.info("Auction start reply: {}", reply.body()))
-                .onFailure(error -> log.error("Auction start failed: {}", error.getMessage()));
+                .onSuccess(reply -> future.complete(reply.body()))
+                .onFailure(future::completeExceptionally);
+
+        return future;
     }
 }
