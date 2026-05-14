@@ -23,7 +23,7 @@ dependencies {
 	// spring
 	implementation("org.springframework.boot:spring-boot-h2console")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-	implementation("org.springframework.boot:spring-boot-starter-webmvc")
+	implementation("org.springframework.boot:spring-boot-starter-webflux")
 
 	// vertx
 	implementation(platform("io.vertx:vertx-stack-depchain:$vertxVersion"))
@@ -39,7 +39,7 @@ dependencies {
 
 	// test
 	testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
-	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+	testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
 	testImplementation("io.vertx:vertx-junit5")
 	testCompileOnly("org.projectlombok:lombok")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")

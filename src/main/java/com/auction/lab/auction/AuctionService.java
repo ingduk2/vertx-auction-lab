@@ -7,8 +7,7 @@ import io.vertx.core.eventbus.DeliveryOptions;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.concurrent.CompletableFuture;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 @Service
@@ -17,18 +16,17 @@ public class AuctionService {
 
     private final Vertx vertx;
 
-    public CompletableFuture<String> startAuction(AuctionStartMessage message) {
-        CompletableFuture<String> future = new CompletableFuture<>();
+    public Mono<String> startAuction(AuctionStartMessage message) {
         DeliveryOptions options = new DeliveryOptions().setSendTimeout(3000);
 
-        vertx.eventBus().<String>request(
-                        EventBusAddress.AUCTION_START.address(),
-                        message,
-                        options
-                )
-                .onSuccess(reply -> future.complete(reply.body()))
-                .onFailure(future::completeExceptionally);
-
-        return future;
+        return Mono.create(sink ->
+                vertx.eventBus().<String>request(
+                                EventBusAddress.AUCTION_START.address(),
+                                message,
+                                options
+                        )
+                        .onSuccess(reply -> sink.success(reply.body()))
+                        .onFailure(sink::error)
+        );
     }
 }
