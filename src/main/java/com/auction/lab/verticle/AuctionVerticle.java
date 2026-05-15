@@ -2,6 +2,7 @@ package com.auction.lab.verticle;
 
 import com.auction.lab.common.EventBusAddress;
 import com.auction.lab.domain.AuctionState;
+import com.auction.lab.domain.message.AuctionSaveMessage;
 import com.auction.lab.domain.message.AuctionStartMessage;
 import com.auction.lab.domain.message.BidMessage;
 import io.vertx.core.AbstractVerticle;
@@ -68,6 +69,16 @@ public class AuctionVerticle extends AbstractVerticle {
         vertx.eventBus().publish(
                 EventBusAddress.AUCTION_END.address(),
                 "Auction closed! Winner: " + state.getHighestBidderId() + " with " + state.getHighestBid()
+        );
+
+        vertx.eventBus().send(
+                EventBusAddress.AUCTION_SAVE.address(),
+                new AuctionSaveMessage(
+                        auctionId,
+                        state.getHighestBidderId(),
+                        state.getHighestBid(),
+                        state.getStartedAt()
+                )
         );
     }
 

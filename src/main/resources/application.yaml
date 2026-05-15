@@ -1,6 +1,13 @@
 spring:
   application:
     name: vertx-auction-lab
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: create-drop
+    h2:
+      console:
+        enabled: true
 
 server:
   port: 8080
