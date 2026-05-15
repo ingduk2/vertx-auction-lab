@@ -108,7 +108,8 @@ Spring REST (:8080)        ← 관리 API (경매 생성, 조회 등)
 - 5-1. Event Loop에서 JPA 부르면 왜 위험한가 — 블로킹 문제
 - 5-2. Worker Verticle 패턴으로 JPA 격리
 - 5-3. 경매 이력 저장 설계 & 엔티티 구성
-- 5-4. Vert.x Reactive SQL Client vs JPA — 왜 이 프로젝트는 JPA를 선택했는가
+- 5-4. WebFlux 환경에서 H2 콘솔 설정 — 별도 서버로 띄우기
+- 5-5. Vert.x Reactive SQL Client vs JPA — 왜 이 프로젝트는 JPA를 선택했는가
 
 ---
 
