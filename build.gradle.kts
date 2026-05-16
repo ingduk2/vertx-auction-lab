@@ -35,7 +35,7 @@ dependencies {
 
 	// dev
 	developmentOnly("org.springframework.boot:spring-boot-devtools")
-	runtimeOnly("com.h2database:h2")
+	implementation("com.h2database:h2")
 
 	// test
 	testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
