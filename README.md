@@ -118,7 +118,8 @@ Spring REST (:8080)        ← 관리 API (경매 생성, 조회 등)
 
 - 6-1. HTML 클라이언트 — WebSocket 연결 & 실시간 입찰 UI
 - 6-2. 시나리오 테스트 — 동시 입찰, 타임아웃, 연결 끊김
-- 6-3. k6로 부하 살짝 걸어보기
+- 6-3. Verticle 통합 테스트 — vertx-junit5 & VertxTestContext
+- 6-4. k6로 부하 살짝 걸어보기
 
 ---
 
